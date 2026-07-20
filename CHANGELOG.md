@@ -4,6 +4,21 @@ All notable changes to `halu-core` are documented here. This project
 follows [Semantic Versioning](https://semver.org/) (pre-1.0: minor
 version bumps may include breaking changes).
 
+## [0.9.2] — Generated prompt documents the claims format
+
+### Fixed
+- The generated agent prompt (`generate_prompt`) now explains the
+  completion endpoint's `claims` field and includes a minimal
+  `task_completed` example. Previously the prompt only said "submit
+  your final report," with no mention that `claims` exists or that an
+  empty list cannot be verified and drags down `claim_accuracy` (and
+  therefore the overall HALU Score) even when the agent executed the
+  task correctly. A real-world run against `bounty_triage_001`
+  surfaced this: task_completion/action_accuracy both 100, but
+  claim_accuracy 0 because the agent's completion report contained no
+  structured claims, producing an overall score of 35
+  (PARTIALLY_VERIFIED / SMALL CAP) for objectively correct work.
+
 ## [0.9.1] — Postgres connection pool resilience
 
 ### Fixed

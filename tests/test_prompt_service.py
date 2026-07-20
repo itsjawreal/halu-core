@@ -61,3 +61,9 @@ def test_prompt_style_note_varies_by_agent_type(
 def test_prompt_strips_trailing_slash_from_base_url(run: Run) -> None:
     prompt = generate_prompt(run, "raw-token-value", "http://127.0.0.1:8000/")
     assert "8000//api" not in prompt
+
+
+def test_prompt_documents_claims_format_with_task_completed_example(run: Run) -> None:
+    prompt = generate_prompt(run, "raw-token-value", "http://127.0.0.1:8000")
+    assert '"claims"' in prompt
+    assert '{"type": "task_completed", "value": true}' in prompt

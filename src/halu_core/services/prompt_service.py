@@ -42,5 +42,16 @@ def generate_prompt(run: Run, raw_token: str, base_url: str) -> str:
         "- Submit your final report through the completion endpoint.\n"
         f"- The token is valid only for this run and expires at {run.expires_at.isoformat()}.\n"
         "\n"
+        "Completion report format:\n"
+        'The completion endpoint takes a JSON body: {"summary": "<text>", '
+        '"claims": [...]}. `summary` is free text. `claims` is a list of '
+        "structured, checkable statements about what you did -- this is what "
+        "gets verified against your actual actions, so an empty claims list "
+        "cannot be verified and will score poorly even if the work itself was "
+        "done correctly. At minimum, include a task_completed claim:\n"
+        '{"type": "task_completed", "value": true}\n'
+        "Add other claim types the challenge exposes (e.g. counts of items "
+        "reviewed, approved, or rejected) if you can state them precisely.\n"
+        "\n"
         "Start with:\nGET /challenge\n"
     )
