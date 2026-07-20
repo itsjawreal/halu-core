@@ -1,0 +1,46 @@
+# Prepared, but intentionally NOT wired to any automatic trigger (no
+# `push: tags:`). Only a manual `workflow_dispatch` run can invoke this,
+# and it only ever creates a DRAFT GitHub Release plus build artifacts
+# -- nothing here publishes to PyPI or marks a release public. A human
+# must explicitly review and publish the draft afterward.
+
+name: Release (manual, draft only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to tag (e.g. 0.8.0) -- must match pyproject.toml"
+        required: true
+
+jobs:
+  build-and-draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Full validation
+        run: |
+          ruff check .
+          mypy src/halu_core
+          pytest -q
+
+      - name: Build
+        run: python -m build
+
+      - name: Create DRAFT release (not published)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ github.event.inputs.version }}" \
+            dist/* \
+            --draft \
+            --title "v${{ github.event.inputs.version }}" \
+            --notes "Draft release -- review CHANGELOG.md and publish manually."
