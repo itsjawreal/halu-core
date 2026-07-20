@@ -4,6 +4,17 @@ All notable changes to `halu-core` are documented here. This project
 follows [Semantic Versioning](https://semver.org/) (pre-1.0: minor
 version bumps may include breaking changes).
 
+## [0.9.1] — Postgres connection pool resilience
+
+### Fixed
+- The SQLAlchemy engine now sets `pool_pre_ping=True` and
+  `pool_recycle=300` for any persistent (non-ephemeral) database.
+  Managed Postgres endpoints (e.g. Neon's pooled/pgbouncer endpoint)
+  can close idle connections server-side at any time; without this, a
+  request that reused a pooled connection SQLAlchemy hadn't noticed was
+  dead failed with `psycopg2.OperationalError: SSL connection has been
+  closed unexpectedly` instead of transparently reconnecting.
+
 ## [0.9.0] — Phase 8.7: Runs Router Extension Point
 
 ### Added

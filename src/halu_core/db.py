@@ -18,7 +18,19 @@ _is_memory = settings.database_url in ("sqlite://", "sqlite:///:memory:")
 _connect_args = {"check_same_thread": False} if _is_sqlite else {}
 # An in-memory SQLite database only exists for the lifetime of one
 # connection, so pool every request onto the same connection.
-_engine_kwargs = {"poolclass": StaticPool} if _is_memory else {}
+if _is_memory:
+    _engine_kwargs: dict[str, object] = {"poolclass": StaticPool}
+else:
+    # A managed Postgres endpoint (e.g. Neon's pooled/pgbouncer endpoint)
+    # can close idle connections server-side at any time. Without
+    # pool_pre_ping, SQLAlchemy hands out those dead connections from its
+    # pool as-is, and the first query on one fails with
+    # "SSL connection has been closed unexpectedly". pool_pre_ping issues
+    # a cheap liveness check before reusing a pooled connection and
+    # transparently reconnects if it's dead; pool_recycle proactively
+    # retires connections before they get old enough to hit a idle
+    # timeout in the first place.
+    _engine_kwargs = {"pool_pre_ping": True, "pool_recycle": 300}
 engine = create_engine(settings.database_url, connect_args=_connect_args, **_engine_kwargs)
 
 
