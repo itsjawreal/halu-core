@@ -7,4 +7,4 @@ Bump this whenever a new migration is added under `alembic/versions/`.
 
 from __future__ import annotations
 
-EXPECTED_MIGRATION_HEAD = "0004"
+EXPECTED_MIGRATION_HEAD = "0006"

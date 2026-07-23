@@ -159,6 +159,16 @@ class Challenge(ABC):
         """
         return {}
 
+    def get_episode_profile_context(self, profile: str) -> dict[str, Any]:
+        """Public benchmark-owned context for one full-agent profile.
+
+        Challenge packages may expose signed memory fixtures, adversarial
+        notices, virtual-time gates, or delegation constraints. The default
+        is intentionally empty so existing challenges remain compatible.
+        Hidden truth must never be returned here.
+        """
+        return {}
+
     def is_flaky_item(self, state: dict[str, Any], item_id: str) -> bool:
         """Whether this item should simulate one transient read error.
 

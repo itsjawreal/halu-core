@@ -9,17 +9,21 @@ branding -- useful for anyone self-hosting just the open-source engine.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
+from fastapi.params import Depends as DependsParam
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 import halu_core.challenges  # noqa: F401  (registers example challenges on import)
 from halu_core import __version__
 from halu_core.api.agent import router as agent_router
+from halu_core.api.campaigns import router as campaigns_router
+from halu_core.api.episode_runtime import router as episode_runtime_router
 from halu_core.api.runs import router as _default_runs_router
+from halu_core.api.runtime_packages import router as runtime_packages_router
 from halu_core.challenges.quality import validate_all_registered
 from halu_core.challenges.registry import registry
 from halu_core.db import ensure_database_ready
@@ -72,6 +76,7 @@ def create_app(
     readiness_challenge_ids: tuple[str, ...] = (),
     include_runs_router: bool = True,
     runs_router: APIRouter | None = None,
+    control_plane_dependencies: Sequence[DependsParam] = (),
 ) -> FastAPI:
     """Build a FastAPI app exposing the core Run/Token API and /health.
 
@@ -105,6 +110,15 @@ def create_app(
     if include_runs_router:
         app.include_router(effective_runs_router)
     app.include_router(agent_router)
+    app.include_router(episode_runtime_router)
+    app.include_router(
+        runtime_packages_router,
+        dependencies=list(control_plane_dependencies),
+    )
+    app.include_router(
+        campaigns_router,
+        dependencies=list(control_plane_dependencies),
+    )
 
     register_error_handlers(app)
 

@@ -7,7 +7,7 @@ from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 
-from halu_core.models.enums import AgentType, RunStatus
+from halu_core.models.enums import AgentType, EpisodeProfile, RunStatus
 from halu_core.timeutils import utc_now
 
 
@@ -40,3 +40,19 @@ class Run(SQLModel, table=True):
     # request's IP/fingerprint, used only to enforce "max active runs
     # per IP" -- never the raw IP itself.
     creator_ip_hash: str | None = None
+    # Full-agent foundation. Nullable foreign keys keep every legacy run
+    # valid; standalone POST /runs remains a cold, campaign-less episode.
+    runtime_package_id: str | None = Field(
+        default=None, foreign_key="runtimepackage.id", index=True
+    )
+    campaign_id: str | None = Field(default=None, foreign_key="campaign.id", index=True)
+    episode_profile: EpisodeProfile = EpisodeProfile.COLD
+    scenario_seed_commitment: str | None = None
+    status_revision: int = 0
+    credential_generation: int = 1
+    virtual_time: datetime | None = None
+    wall_clock_budget_ms: int | None = None
+    tool_call_budget: int | None = None
+    tool_calls_used: int = 0
+    cost_budget_usd: float | None = None
+    cost_used_usd: float = 0.0

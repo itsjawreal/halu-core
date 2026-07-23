@@ -4,6 +4,34 @@ All notable changes to `halu-core` are documented here. This project
 follows [Semantic Versioning](https://semver.org/) (pre-1.0: minor
 version bumps may include breaking changes).
 
+## [0.10.0] — Full-Agent Runtime Foundation
+
+### Added
+- Immutable runtime-package identities covering soul, memory, tools,
+  orchestration, recovery, artifact, and model declarations.
+- Multi-profile campaigns that expand one runtime package into
+  version-pinned challenge runs with committed scenario seeds.
+- Full-agent episode metadata, budgets, lifecycle states, and
+  compare-and-swap lifecycle revisions.
+- Runtime-package and campaign control-plane routers, with an
+  application-factory dependency hook so hosted products can enforce
+  their own account authentication and quotas.
+- Alembic revision `0005` and full-agent contract tests.
+- Participant-facing profile discovery plus checkpoint/resume endpoints.
+- Deterministic interrupted-episode control: checkpoint cursor validation,
+  current-generation credential revocation, one-time resume credentials,
+  rotated agent credentials, and post-checkpoint reconciliation events.
+- Alembic revision `0006` for checkpoint and resume-token persistence.
+
+### Changed
+- Existing standalone runs remain backward-compatible cold episodes.
+- Campaign challenge versions are always resolved and persisted
+  concretely; `"unversioned"` is no longer created by campaign APIs.
+- Exact runtime-package re-registration is idempotent and campaign
+  credentials include one-time agent tokens plus separate view tokens.
+- Lifecycle revisions now use a database-level conditional update,
+  preventing concurrent callers from both winning the same transition.
+
 ## [0.9.2] — Generated prompt documents the claims format
 
 ### Fixed

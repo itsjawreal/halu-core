@@ -26,7 +26,7 @@ from halu_core.challenges.registry import ChallengeNotFoundError, registry
 from halu_core.challenges.verification import ClaimInput
 from halu_core.config import settings
 from halu_core.models.claim import RunClaim
-from halu_core.models.enums import AgentType, EventType, RunStatus, TokenScope
+from halu_core.models.enums import AgentType, EpisodeProfile, EventType, RunStatus, TokenScope
 from halu_core.models.final_report import FinalReport
 from halu_core.models.run import Run
 from halu_core.models.token import RunToken
@@ -78,6 +78,13 @@ def create_run(
     ttl_seconds: int | None = None,
     scope: tuple[TokenScope, ...] | None = None,
     creator_ip_hash: str | None = None,
+    runtime_package_id: str | None = None,
+    campaign_id: str | None = None,
+    episode_profile: EpisodeProfile = EpisodeProfile.COLD,
+    scenario_seed_commitment: str | None = None,
+    wall_clock_budget_ms: int | None = None,
+    tool_call_budget: int | None = None,
+    cost_budget_usd: float | None = None,
 ) -> tuple[Run, str]:
     """Create a run and issue its temporary scoped token.
 
@@ -136,6 +143,14 @@ def create_run(
         created_at=now,
         expires_at=now + timedelta(seconds=ttl),
         creator_ip_hash=creator_ip_hash,
+        runtime_package_id=runtime_package_id,
+        campaign_id=campaign_id,
+        episode_profile=episode_profile,
+        scenario_seed_commitment=scenario_seed_commitment,
+        virtual_time=now,
+        wall_clock_budget_ms=wall_clock_budget_ms,
+        tool_call_budget=tool_call_budget,
+        cost_budget_usd=cost_budget_usd,
         **manifest_fields,
     )
     session.add(run)
@@ -163,7 +178,13 @@ def create_run(
         status_code=200,
         success=True,
         state_changed=False,
-        request_data={"challenge_id": challenge_id, "agent_type": agent_type.value},
+        request_data={
+            "challenge_id": challenge_id,
+            "agent_type": agent_type.value,
+            "episode_profile": episode_profile.value,
+            "campaign_id": campaign_id,
+            "runtime_package_id": runtime_package_id,
+        },
         response_data={"expires_at": run.expires_at.isoformat()},
     )
 
@@ -213,8 +234,9 @@ def authenticate(session: Session, run_id: str, raw_token: str) -> tuple[Run, Ru
     if run is None:
         raise RunNotFoundError(f"No run with id {run_id!r}")
 
-    token = session.exec(select(RunToken).where(RunToken.run_id == run_id)).first()
-    if token is None or not verify_token(raw_token, token.token_hash):
+    tokens = session.exec(select(RunToken).where(RunToken.run_id == run_id)).all()
+    token = next((item for item in tokens if verify_token(raw_token, item.token_hash)), None)
+    if token is None:
         raise InvalidTokenError("Token does not authenticate this run.")
 
     if token.revoked:
@@ -230,8 +252,8 @@ def authenticate(session: Session, run_id: str, raw_token: str) -> tuple[Run, Ru
 
     if run.status == RunStatus.EXPIRED or token.expires_at <= now:
         raise InvalidTokenError("Token has expired.")
-    if run.status == RunStatus.COMPLETED:
-        raise RunNotActiveError("Run already completed; token is disabled.")
+    if run.status != RunStatus.ACTIVE:
+        raise RunNotActiveError(f"Run is {run.status.value}; it cannot accept agent requests.")
 
     return run, token
 

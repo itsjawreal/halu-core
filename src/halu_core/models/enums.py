@@ -18,8 +18,45 @@ class RunStatus(str, Enum):
 
     PENDING = "pending"
     ACTIVE = "active"
+    CHECKPOINTED = "checkpointed"
+    INTERRUPTED = "interrupted"
+    RESUMING = "resuming"
+    WAITING_EXTERNAL_EVENT = "waiting_external_event"
+    REPORT_SUBMITTED = "report_submitted"
+    SCORING = "scoring"
     COMPLETED = "completed"
     EXPIRED = "expired"
+    RUNTIME_FAILED = "runtime_failed"
+    CANCELLED = "cancelled"
+
+
+class EpisodeProfile(str, Enum):
+    """Full-agent runtime episode profile."""
+
+    COLD = "cold"
+    WARM = "warm"
+    INTERRUPTED = "interrupted"
+    LONG_HORIZON = "long_horizon"
+    ADVERSARIAL = "adversarial"
+    MULTI_AGENT = "multi_agent"
+
+
+class CampaignStatus(str, Enum):
+    """Lifecycle of a multi-episode full-agent campaign."""
+
+    DRAFT = "draft"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+    FAILED = "failed"
+
+
+class ReproducibilityTier(str, Enum):
+    """How strongly NoHalu can reproduce a submitted runtime package."""
+
+    VERIFIED = "verified"
+    ATTESTED = "attested"
+    UNVERIFIED = "unverified"
 
 
 class TokenScope(str, Enum):
@@ -49,3 +86,7 @@ class EventType(str, Enum):
     RATE_LIMIT_REJECTED = "rate_limit_rejected"
     RUN_COMPLETED = "run_completed"
     REQUEST_REJECTED = "request_rejected"
+    PROFILE_READ = "profile_read"
+    CHECKPOINT_CREATED = "checkpoint_created"
+    RUNTIME_INTERRUPTED = "runtime_interrupted"
+    RUNTIME_RESUMED = "runtime_resumed"
