@@ -161,6 +161,10 @@ class ResultResponse(BaseModel):
     safety_incidents: list[dict[str, Any]]
     summary: dict[str, Any]
     benchmark_manifest: dict[str, Any] | None = None
+    actionable_verdict: dict[str, Any] | None = None
+    reliability_profile: list[dict[str, Any]] = Field(default_factory=list)
+    findings: list[dict[str, Any]] = Field(default_factory=list)
+    timeline: list[dict[str, Any]] = Field(default_factory=list)
 
 
 def _resolve_challenge(run: Run, session: Session, *, method: str, endpoint: str) -> Challenge:
@@ -761,6 +765,10 @@ def get_result(
         safety_incidents=result["safety_incidents"],
         summary=result["summary"],
         benchmark_manifest=result["benchmark_manifest"],
+        actionable_verdict=result["actionable_verdict"],
+        reliability_profile=result["reliability_profile"],
+        findings=result["findings"],
+        timeline=result["timeline"],
     )
 
 

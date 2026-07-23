@@ -3,19 +3,24 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from sqlmodel import Session
 
 from halu_core.api.dependencies import get_session
 from halu_core.models.campaign import Campaign
 from halu_core.models.enums import AgentType, CampaignStatus, EpisodeProfile
+from halu_core.models.run import Run
+from halu_core.services import result_service
 from halu_core.services.campaign_service import (
     CampaignEpisodeCredential,
     ChallengeVersionNotFoundError,
     RuntimePackageNotFoundError,
+    authenticate_campaign_view,
     create_campaign,
+    create_campaign_view_token,
     get_campaign,
 )
 from halu_core.services.episode_runtime_service import (
@@ -71,6 +76,23 @@ class CampaignView(BaseModel):
 
 class CampaignCreated(CampaignView):
     episode_credentials: list[CampaignEpisodeCredentialView]
+    campaign_view_token: str
+
+
+class CampaignEpisodeResultView(BaseModel):
+    run_id: str
+    profile: EpisodeProfile
+    status: str
+    result: dict[str, Any] | None = None
+
+
+class CampaignResultView(BaseModel):
+    campaign_id: str
+    challenge_id: str
+    challenge_version: str
+    completed_episodes: int
+    total_episodes: int
+    episodes: list[CampaignEpisodeResultView]
 
 
 class EpisodeInterruptRequest(BaseModel):
@@ -114,9 +136,11 @@ def register_campaign(
             detail={"error_code": "challenge_version_not_found", "message": str(exc)},
         ) from exc
     base = _view(campaign)
+    campaign_view_token = create_campaign_view_token(session, campaign.id)
     return CampaignCreated(
         **base.model_dump(),
         episode_credentials=[_credential_view(item) for item in credentials],
+        campaign_view_token=campaign_view_token,
     )
 
 
@@ -126,6 +150,43 @@ def read_campaign(campaign_id: str, session: Session = Depends(get_session)) -> 
     if campaign is None:
         raise HTTPException(status_code=404, detail="Campaign not found.")
     return _view(campaign)
+
+
+@router.get("/{campaign_id}/result", response_model=CampaignResultView)
+def read_campaign_result(
+    campaign_id: str,
+    x_campaign_view_token: str = Header(default="", alias="X-Campaign-View-Token"),
+    session: Session = Depends(get_session),
+) -> CampaignResultView:
+    campaign = authenticate_campaign_view(session, campaign_id, x_campaign_view_token)
+    if campaign is None:
+        raise HTTPException(status_code=404, detail="Campaign not found.")
+
+    episodes: list[CampaignEpisodeResultView] = []
+    completed = 0
+    for run_id in campaign.run_ids:
+        run = session.get(Run, run_id)
+        if run is None:
+            continue
+        result = result_service.get_result(session, run.id)
+        if result is not None:
+            completed += 1
+        episodes.append(
+            CampaignEpisodeResultView(
+                run_id=run.id,
+                profile=run.episode_profile,
+                status=run.status.value,
+                result=result,
+            )
+        )
+    return CampaignResultView(
+        campaign_id=campaign.id,
+        challenge_id=campaign.challenge_id,
+        challenge_version=campaign.challenge_version,
+        completed_episodes=completed,
+        total_episodes=len(campaign.run_ids),
+        episodes=episodes,
+    )
 
 
 @router.post(

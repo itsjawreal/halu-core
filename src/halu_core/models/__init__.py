@@ -5,6 +5,7 @@ RunClaim, ClaimVerificationRecord, RunScore) and plain Pydantic shapes
 """
 
 from halu_core.models.campaign import Campaign
+from halu_core.models.campaign_view_token import CampaignViewToken
 from halu_core.models.challenge import ChallengeState
 from halu_core.models.claim import RunClaim
 from halu_core.models.enums import (
@@ -37,6 +38,7 @@ __all__ = [
     "AgentType",
     "Campaign",
     "CampaignStatus",
+    "CampaignViewToken",
     "ChallengeState",
     "ClaimVerificationRecord",
     "EpisodeProfile",

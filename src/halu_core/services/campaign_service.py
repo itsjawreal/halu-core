@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import secrets
 from dataclasses import dataclass
+from datetime import timedelta
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from halu_core.canonical_json import canonical_hash
 from halu_core.challenges.registry import ChallengeNotFoundError, registry
 from halu_core.models.campaign import Campaign
+from halu_core.models.campaign_view_token import CampaignViewToken
 from halu_core.models.enums import AgentType, CampaignStatus, EpisodeProfile
 from halu_core.models.runtime_package import RuntimePackage
 from halu_core.services.run_service import create_run, create_view_token
+from halu_core.services.token_service import generate_raw_token, hash_token, verify_token
 from halu_core.timeutils import utc_now
 
 
@@ -108,3 +111,38 @@ def create_campaign(
 
 def get_campaign(session: Session, campaign_id: str) -> Campaign | None:
     return session.get(Campaign, campaign_id)
+
+
+def create_campaign_view_token(session: Session, campaign_id: str) -> str:
+    """Mint a show-once, read-only campaign comparison credential."""
+    raw_token = generate_raw_token(32)
+    now = utc_now()
+    session.add(
+        CampaignViewToken(
+            campaign_id=campaign_id,
+            token_hash=hash_token(raw_token),
+            created_at=now,
+            expires_at=now + timedelta(days=30),
+        )
+    )
+    session.commit()
+    return raw_token
+
+
+def authenticate_campaign_view(
+    session: Session, campaign_id: str, raw_token: str
+) -> Campaign | None:
+    campaign = session.get(Campaign, campaign_id)
+    if campaign is None or not raw_token:
+        return None
+    candidates = session.exec(
+        select(CampaignViewToken).where(CampaignViewToken.campaign_id == campaign_id)
+    ).all()
+    now = utc_now()
+    valid = any(
+        not token.revoked
+        and token.expires_at > now
+        and verify_token(raw_token, token.token_hash)
+        for token in candidates
+    )
+    return campaign if valid else None

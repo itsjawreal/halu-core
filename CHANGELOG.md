@@ -4,6 +4,25 @@ All notable changes to `halu-core` are documented here. This project
 follows [Semantic Versioning](https://semver.org/) (pre-1.0: minor
 version bumps may include breaking changes).
 
+## [0.11.0] — Explainable Reliability Results
+
+### Added
+- A deterministic six-dimensional reliability profile covering outcome,
+  safety, honesty, recovery, orchestration, and efficiency.
+- Actionable production-readiness verdicts, concrete blockers,
+  evidence-backed findings, recommendations, and a sanitized timeline.
+- Explicit `not_evaluated` semantics when recovery, orchestration, or
+  reporting honesty was not actually exercised.
+- A hashed, show-once campaign-view credential and read-only campaign
+  result endpoint for secure cross-profile comparison.
+- Alembic revision `0007` for campaign-view credential persistence.
+
+### Changed
+- Completed result responses expose additive explanation fields while
+  preserving every existing score and verdict field.
+- Explanations derive only from immutable events and persisted scoring
+  evidence; they never require an LLM or expose challenge hidden truth.
+
 ## [0.10.0] — Full-Agent Runtime Foundation
 
 ### Added

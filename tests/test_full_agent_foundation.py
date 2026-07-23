@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
-from sqlmodel import Session
+from sqlmodel import Session, select
 
+from halu_core.models.campaign_view_token import CampaignViewToken
 from halu_core.models.enums import EpisodeProfile, RunStatus
 from halu_core.models.run import Run
 from halu_core.services.lifecycle_service import (
@@ -89,6 +90,25 @@ def test_campaign_creates_one_episode_per_profile_and_seed(
     assert len(body["run_ids"]) == 6
     assert len(body["episode_credentials"]) == 6
     assert len({item["token"] for item in body["episode_credentials"]}) == 6
+    assert body["campaign_view_token"]
+    stored_view_tokens = session.exec(
+        select(CampaignViewToken).where(CampaignViewToken.campaign_id == body["id"])
+    ).all()
+    assert len(stored_view_tokens) == 1
+    assert stored_view_tokens[0].token_hash != body["campaign_view_token"]
+
+    denied = client.get(
+        f"/api/v1/campaigns/{body['id']}/result",
+        headers={"X-Campaign-View-Token": "wrong"},
+    )
+    assert denied.status_code == 404
+    comparison = client.get(
+        f"/api/v1/campaigns/{body['id']}/result",
+        headers={"X-Campaign-View-Token": body["campaign_view_token"]},
+    )
+    assert comparison.status_code == 200
+    assert comparison.json()["total_episodes"] == 6
+    assert comparison.json()["completed_episodes"] == 0
 
     runs = [session.get(Run, run_id) for run_id in body["run_ids"]]
     assert all(run is not None for run in runs)

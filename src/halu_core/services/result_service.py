@@ -18,6 +18,7 @@ from halu_core.models.final_report import FinalReport
 from halu_core.models.run import Run
 from halu_core.models.score import RunScore
 from halu_core.models.verification import ClaimVerificationRecord
+from halu_core.services import event_service, explanation_service
 
 
 def get_result(session: Session, run_id: str) -> dict[str, Any] | None:
@@ -46,6 +47,22 @@ def get_result(session: Session, run_id: str) -> dict[str, Any] | None:
     )
 
     run = session.get(Run, run_id)
+    events = event_service.list_events(session, run_id, limit=10_000)
+    explanation = (
+        explanation_service.build_explanation(
+            run=run,
+            score=score,
+            verifications=list(verifications),
+            events=events,
+        )
+        if run is not None
+        else {
+            "actionable_verdict": None,
+            "reliability_profile": [],
+            "findings": [],
+            "timeline": [],
+        }
+    )
     benchmark_manifest = (
         {
             "challenge_id": run.challenge_id,
@@ -93,4 +110,5 @@ def get_result(session: Session, run_id: str) -> dict[str, Any] | None:
         "summary": summary,
         "scoring_version": score.scoring_version,
         "benchmark_manifest": benchmark_manifest,
+        **explanation,
     }
