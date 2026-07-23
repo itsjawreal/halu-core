@@ -12,6 +12,8 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
@@ -19,6 +21,7 @@ from halu_core.challenges.base import Challenge
 from halu_core.challenges.models import ActionRequest, ActionResult
 from halu_core.challenges.registry import ProductionManifestChangeError, registry
 from halu_core.config import settings as real_settings
+from halu_core.migrations_meta import EXPECTED_MIGRATION_HEAD
 from halu_core.models.enums import AgentType, RunStatus
 from halu_core.models.public_share import RunPublicShare
 from halu_core.models.run import Run
@@ -350,6 +353,11 @@ def test_check_migration_head_ok_on_ephemeral_database() -> None:
     result = check_migration_head()
     assert result.ok is True
     assert "ephemeral" in result.detail
+
+
+def test_expected_migration_head_matches_alembic_head() -> None:
+    script = ScriptDirectory.from_config(Config("alembic.ini"))
+    assert EXPECTED_MIGRATION_HEAD == script.get_current_head()
 
 
 def test_check_registered_challenges_reports_missing() -> None:

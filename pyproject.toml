@@ -1,6 +1,6 @@
 [project]
 name = "halu-core"
-version = "0.11.0"
+version = "0.11.1"
 description = "Open-source engine for HALU Checker: run/token lifecycle, challenge API, verification, and scoring for autonomous AI agent evaluation."
 readme = "README.md"
 requires-python = ">=3.10"
