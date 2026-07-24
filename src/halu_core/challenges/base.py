@@ -66,6 +66,10 @@ class Challenge(ABC):
     def allowed_actions(self) -> tuple[str, ...]:
         """The action names this challenge recognizes (spec §7)."""
 
+    def action_schemas(self) -> dict[str, dict[str, Any]]:
+        """Public example request bodies keyed by action name."""
+        return {}
+
     # -- Descriptive metadata (Phase 7) --------------------------------
     #
     # Purely informational: shown on the challenge-selection page and in

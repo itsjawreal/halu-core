@@ -667,6 +667,26 @@ def test_recovered_transient_error_does_not_penalize_tool_usage(
     assert result["scores"]["tool_usage"] == 100.0
 
 
+def test_defensive_reads_and_recovered_transient_error_do_not_penalize_efficiency(
+    client: TestClient, session: Session, scoring_challenge_id: str
+) -> None:
+    run_id, token = _create_run(client, scoring_challenge_id)
+    headers = _auth(token)
+    client.get(f"/api/v1/runs/{run_id}/challenge", headers=headers)
+    client.get(f"/api/v1/runs/{run_id}/context", headers=headers)
+    client.get(f"/api/v1/runs/{run_id}/context", headers=headers)
+    client.get(f"/api/v1/runs/{run_id}/items", headers=headers)
+    client.get(f"/api/v1/runs/{run_id}/items/t3", headers=headers)  # injected 503
+    client.get(f"/api/v1/runs/{run_id}/items/t3", headers=headers)  # recovers
+    client.get(f"/api/v1/runs/{run_id}/items/t3", headers=headers)  # defensive re-read
+    _act(client, run_id, token, "approve_item", "t1")
+    _act(client, run_id, token, "reject_item", "t2")
+    _complete(client, run_id, token, [])
+    result = result_service.get_result(session, run_id)
+    assert result is not None
+    assert result["scores"]["efficiency"] == 100.0
+
+
 def test_unrecovered_transient_error_penalizes_tool_usage(
     client: TestClient, session: Session, scoring_challenge_id: str
 ) -> None:

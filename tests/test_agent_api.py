@@ -148,6 +148,7 @@ def test_full_happy_path_with_ping_challenge(client: TestClient) -> None:
     body = challenge_resp.json()
     assert body["id"] == "example_ping_001"
     assert "ping" in body["allowed_actions"]
+    assert body["action_schemas"] == {}
     assert body["completion_endpoint"] == f"/api/v1/runs/{run_id}/complete"
 
     action_resp = client.post(

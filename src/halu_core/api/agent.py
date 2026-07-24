@@ -78,6 +78,7 @@ class ChallengeView(BaseModel):
     time_limit_seconds: int
     public_instructions: str
     allowed_actions: list[str]
+    action_schemas: dict[str, dict[str, Any]]
     category: str
     difficulty: str
     estimated_duration_minutes: int
@@ -284,6 +285,7 @@ def get_challenge(
     descriptor = challenge.describe()
     response = ChallengeView(
         **descriptor.model_dump(),
+        action_schemas=challenge.action_schemas(),
         completion_endpoint=f"/api/v1/runs/{run.id}/complete",
     )
     event_service.record_event(
